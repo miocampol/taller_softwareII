@@ -36,17 +36,44 @@ def render_api_captures(root):
 
 def render_locust_captures(root):
     lines = ['## Evidencia visual del cliente de Locust', '',
-             'Las siguientes capturas se toman desde http://127.0.0.1:8089. '
-             'Corresponden a una ejecución adicional desde la interfaz; los parámetros y las cifras '
-             'deben identificarse en la propia captura o en su pie. No sustituyen los diagnósticos '
-             'anteriores ni demuestran una prueba formal prolongada.', '']
+             'Capturas de Statistics tomadas desde http://127.0.0.1:8089 contra la API principal. '
+             'El estado visible es **RUNNING**: las cifras corresponden al instante de captura, '
+             'no al cierre de la ejecución. No se registraron el spawn rate ni la duración de estas '
+             'ejecuciones. No sustituyen los diagnósticos anteriores ni acreditan pruebas prolongadas.', '']
+    observed = [
+        (5, 'image-6.png', '84 peticiones, 0 fallos (0%), p95 agregado 6200 ms, '
+         'mediana 4000 ms y RPS actual 0,8. Se ejecutaron los cuatro endpoints.'),
+        (50, 'image-7.png', '47 peticiones, 5 fallos (10,64%; la cabecera redondea a 11%), '
+         'p95 agregado 30000 ms, mediana 15000 ms y RPS actual 0,8. '
+         'Se ejecutaron los cuatro endpoints. Aumentan los fallos y la latencia sin una mejora '
+         'observable del throughput en estas capturas.'),
+    ]
+    for users, filename, summary in observed:
+        if (root / 'reports' / filename).is_file():
+            lines += [f'### Prueba con {users} usuarios', '', summary, '',
+                      f'![Statistics con {users} usuarios]({filename})', '',
+                      f'*{users} usuarios activos; host http://127.0.0.1:8000; '
+                      'estadísticas acumuladas al instante de captura. Spawn rate y duración no registrados.*', '']
+    any_thousand = any((root / 'reports' / f'locust-1000-{view}.png').is_file()
+                      for view in ['estadisticas', 'graficos'])
+    if not any_thousand:
+        lines += ['**Prueba con 1000 usuarios:** fue planteada, pero no hay una captura disponible '
+                  'que permita documentar su resultado. Tampoco se adjuntaron gráficos de las pruebas '
+                  'con 5 y 50 usuarios.', '']
+    for users in [5, 50, 1000]:
+        for view in ['estadisticas', 'graficos', 'fallos']:
+            name = f'locust-{users}-{view}.png'
+            if (root / 'reports' / name).is_file():
+                lines += [f'### Captura adicional: {users} usuarios, {view}', '',
+                          f'![Locust: {users} usuarios, {view}]({name})', '',
+                          '*Ejecución adicional. Los parámetros deben identificarse en su evidencia.*', '']
     images = [('locust-estadisticas.png', 'Statistics: peticiones, fallos, RPS y percentiles por operación'),
               ('locust-graficos.png', 'Charts: evolución de usuarios, latencia y throughput'),
               ('locust-fallos.png', 'Failures: tipos de fallos y ocurrencias, si existen')]
     for name, caption in images:
         if (root / 'reports' / name).is_file():
             lines += [f'![{caption}]({name})', '', f'*{caption}*', '']
-    if not (root / 'reports' / 'locust-estadisticas.png').is_file() or not (root / 'reports' / 'locust-graficos.png').is_file():
+    if not any((root / 'reports' / filename).is_file() for _, filename, _ in observed) and not any_thousand and not (root / 'reports' / 'locust-estadisticas.png').is_file():
         lines += ['Para completar esta sección, guarda las capturas de **Statistics** y **Charts** '
                   'en `reports/locust-estadisticas.png` y `reports/locust-graficos.png`. '
                   'Si hay errores, agrega `reports/locust-fallos.png`. '

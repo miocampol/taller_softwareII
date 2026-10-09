@@ -163,9 +163,25 @@ Muestreo de un segundo durante los diagnósticos. CPU 100% equivale a un núcleo
 
 ## Evidencia visual del cliente de Locust
 
-Las siguientes capturas se toman desde http://127.0.0.1:8089. Corresponden a una ejecución adicional desde la interfaz; los parámetros y las cifras deben identificarse en la propia captura o en su pie. No sustituyen los diagnósticos anteriores ni demuestran una prueba formal prolongada.
+Capturas de Statistics tomadas desde http://127.0.0.1:8089 contra la API principal. El estado visible es **RUNNING**: las cifras corresponden al instante de captura, no al cierre de la ejecución. No se registraron el spawn rate ni la duración de estas ejecuciones. No sustituyen los diagnósticos anteriores ni acreditan pruebas prolongadas.
 
-Para completar esta sección, guarda las capturas de **Statistics** y **Charts** en `reports/locust-estadisticas.png` y `reports/locust-graficos.png`. Si hay errores, agrega `reports/locust-fallos.png`. Al regenerar el informe se incorporarán automáticamente.
+### Prueba con 5 usuarios
+
+84 peticiones, 0 fallos (0%), p95 agregado 6200 ms, mediana 4000 ms y RPS actual 0,8. Se ejecutaron los cuatro endpoints.
+
+![Statistics con 5 usuarios](image-6.png)
+
+*5 usuarios activos; host http://127.0.0.1:8000; estadísticas acumuladas al instante de captura. Spawn rate y duración no registrados.*
+
+### Prueba con 50 usuarios
+
+47 peticiones, 5 fallos (10,64%; la cabecera redondea a 11%), p95 agregado 30000 ms, mediana 15000 ms y RPS actual 0,8. Se ejecutaron los cuatro endpoints. Aumentan los fallos y la latencia sin una mejora observable del throughput en estas capturas.
+
+![Statistics con 50 usuarios](image-7.png)
+
+*50 usuarios activos; host http://127.0.0.1:8000; estadísticas acumuladas al instante de captura. Spawn rate y duración no registrados.*
+
+**Prueba con 1000 usuarios:** fue planteada, pero no hay una captura disponible que permita documentar su resultado. Tampoco se adjuntaron gráficos de las pruebas con 5 y 50 usuarios.
 
 ## Interpretación y pendientes para la entrega formal
 
@@ -184,4 +200,4 @@ Los comandos, duraciones completas y pasos de navegador están en [README.md](..
 
 Material del taller: [PDF](../locust_test.pdf). Referencias de implementación: [Locust](https://docs.locust.io/en/stable/writing-a-locustfile.html), [paginación Laravel 9](https://laravel.com/docs/9.x/pagination).
 
-Los commits son locales al fork. No se realizó push ni se abrió una solicitud al repositorio original.
+El trabajo y sus evidencias se publican únicamente en el fork personal. No se abre una solicitud de cambios al repositorio original.

@@ -2,6 +2,7 @@
 
 import csv
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -15,6 +16,33 @@ EVIDENCE = ROOT / "reports" / "evidence"
 def evidence_path(name):
     local = GENERATED / name
     return local if local.exists() else EVIDENCE / name
+
+
+def sync_readme(root, report):
+    """Replace only the generated report, preserving the installation instructions."""
+    path = root / 'README.md'
+    begin, end = '<!-- BEGIN LOCUST REPORT -->', '<!-- END LOCUST REPORT -->'
+    current = path.read_text(encoding='utf-8-sig')
+    if begin not in current or end not in current:
+        raise ValueError('README report markers are missing; installation instructions were preserved')
+
+    def rebase(match):
+        label, target = match.groups()
+        if target.startswith(('https://', 'http://', '#')):
+            return match.group(0)
+        if target == '../README.md':
+            target = '#inicio-rapido'
+        elif target.startswith('../'):
+            target = target[3:]
+        else:
+            target = 'reports/' + target
+        return f'{label}({target})'
+
+    rebased = re.sub(r'(!?\[[^\]]*\])\(([^)]+)\)', rebase, report)
+    rebased = re.sub(r'^(#{1,5}) ', r'\1# ', rebased, flags=re.MULTILINE)
+    prefix = current.split(begin, 1)[0]
+    suffix = current.split(end, 1)[1]
+    path.write_text(prefix + begin + '\n\n' + rebased.rstrip() + '\n\n' + end + suffix, encoding='utf-8')
 
 
 def rows(path):
@@ -238,10 +266,13 @@ def main():
         "[Locust](https://docs.locust.io/en/stable/writing-a-locustfile.html), "
         "[paginación Laravel 9](https://laravel.com/docs/9.x/pagination).",
         "",
-        "Los commits son locales al fork. No se realizó push ni se abrió una solicitud al repositorio original.",
+        "El trabajo y sus evidencias se publican únicamente en el fork personal. "
+        "No se abre una solicitud de cambios al repositorio original.",
     ]
-    (ROOT / "reports" / "INFORME.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
-    print("Written reports/INFORME.md and selected evidence")
+    report = "\n".join(lines).rstrip() + "\n"
+    (ROOT / "reports" / "INFORME.md").write_text(report, encoding="utf-8")
+    sync_readme(ROOT, report)
+    print("Updated README.md, reports/INFORME.md and selected evidence")
 
 
 if __name__ == "__main__":
