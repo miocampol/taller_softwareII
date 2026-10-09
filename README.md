@@ -99,3 +99,5 @@ Sustituye los PID por los reales. CPU 100% equivale a un núcleo lógico; RSS es
 El servidor PHP integrado en Windows atiende las peticiones secuencialmente. Las mediciones describen este montaje de desarrollo y su cola de solicitudes. Para evaluar un despliegue real, repite los escenarios en un servidor con múltiples trabajadores y documenta el entorno.
 
 Más detalles del contrato en [README-API-LOCUST.md](README-API-LOCUST.md). El informe está en [reports/INFORME.md](reports/INFORME.md).
+
+Para adjuntar capturas, sigue [reports/capturas/GUIA.md](reports/capturas/GUIA.md). Incluye una colección importable de Postman, los nombres de las 14 capturas recomendadas y servidores aislados para comparar antes/después con 10000 filas. Las capturas reales aparecen automáticamente al regenerar el informe.

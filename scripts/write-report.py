@@ -5,9 +5,16 @@ import json
 import shutil
 from pathlib import Path
 
+from capture_sections import render_captures
+
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED = ROOT / "reports" / "generated"
 EVIDENCE = ROOT / "reports" / "evidence"
+
+
+def evidence_path(name):
+    local = GENERATED / name
+    return local if local.exists() else EVIDENCE / name
 
 
 def rows(path):
@@ -16,8 +23,15 @@ def rows(path):
 
 
 def final_stats(prefix):
-    html = (GENERATED / f'{prefix}.html').read_text(encoding='utf-8')
-    payload = json.JSONDecoder().raw_decode(html.split('window.templateArgs = ', 1)[1].lstrip())[0]
+    html_path = GENERATED / f'{prefix}.html'
+    if html_path.exists():
+        html = html_path.read_text(encoding='utf-8')
+        payload = json.JSONDecoder().raw_decode(html.split('window.templateArgs = ', 1)[1].lstrip())[0]
+        html_directory = EVIDENCE / 'html'
+        html_directory.mkdir(exist_ok=True)
+        shutil.copy2(html_path, html_directory / html_path.name)
+    else:
+        payload = json.loads((EVIDENCE / f'{prefix}_final.json').read_text(encoding='utf-8'))
     selected = {key: payload[key] for key in ['start_time', 'end_time', 'duration',
                 'requests_statistics', 'response_time_statistics', 'failures_statistics']}
     (EVIDENCE / f'{prefix}_final.json').write_text(json.dumps(selected, indent=2), encoding='utf-8')
@@ -88,15 +102,34 @@ def main():
         "",
     ]
     for name in ["baseline-all", "baseline-page"]:
-        path = GENERATED / f"{name}.json"
+        path = evidence_path(f"{name}.json")
         data = json.loads(path.read_text(encoding="utf-8-sig"))
-        shutil.copy2(path, EVIDENCE / path.name)
+        if path.parent != EVIDENCE:
+            shutil.copy2(path, EVIDENCE / path.name)
         lines.append(f"- **{data['mode']}**: {data['returned_rows']} filas; {data['elapsed_ms']:.2f} ms; "
                      f"pico {data['peak_memory_mb']} MiB; respuesta {data['response_bytes']:,} bytes.")
     lines += ["", "La paginación reduce las filas cargadas y el tamaño de respuesta. "
               "El conteo exacto del total sigue recorriendo un índice: `EXPLAIN` mostró "
               "`users_birth_date_index` para `COUNT(*)`. Su coste permanece con el dataset masivo.",
-              "", "## Ejecuciones observadas", ""]
+              ""]
+    comparison_path = EVIDENCE / 'comparison-http.json'
+    if comparison_path.exists():
+        comparison = json.loads(comparison_path.read_text(encoding='utf-8'))
+        before, after = comparison['before'], comparison['after']
+        lines += ['### Comparación HTTP aislada para las capturas', '',
+                  f"Se verificaron dos servidores contra `{comparison['database']}`, con "
+                  f"{comparison['comparison_rows']} filas. El antes usa el commit "
+                  f"`{comparison['baseline_commit']}` y el después usa el controlador paginado. "
+                  "La base masiva conserva su configuración. Las peticiones se ejecutaron "
+                  "secuencialmente; son muestras individuales, sin percentiles ni garantía estadística.", '',
+                  f"- Antes: HTTP {before['status']}, {before['rows']} filas, "
+                  f"{before['response_bytes']} bytes y {before['elapsed_ms']} ms.",
+                  f"- Después: HTTP {after['status']}, {after['rows']} filas, "
+                  f"{after['response_bytes']} bytes y {after['elapsed_ms']} ms.",
+                  '- La segunda página devolvió IDs 6 a 10, diferentes de la primera página.', '',
+                  '[Comprobación HTTP y huellas de los controladores](evidence/comparison-http.json). '
+                  'Las capturas 01–03 deben hacerse sobre esos servidores y ese dataset.', '']
+    lines += ['## Ejecuciones observadas', '']
     scenarios = [
         ("smoke-small", "Verificación inicial", "10.000 filas; 5 usuarios, spawn rate 1; 30 segundos."),
         ("smoke-full", "Verificación con dataset masivo", "1.500.000 filas más altas previas; 5 usuarios, spawn rate 1; 30 segundos."),
@@ -107,7 +140,7 @@ def main():
          "Comprueba el perfil de capacidad, pero no demuestra resistencia durante una hora."),
     ]
     for prefix, title, detail in scenarios:
-        path = GENERATED / f"{prefix}_stats.csv"
+        path = evidence_path(f"{prefix}_stats.csv")
         if not path.exists():
             continue
         stats = final_stats(prefix)
@@ -124,7 +157,7 @@ def main():
                              f"{row['Failure Count']} fallos; p50 {row['50%']} ms, p95 {row['95%']} ms, "
                              f"p99 {row['99%']} ms; {float(row['Requests/s']):.2f} RPS.")
         if prefix == 'stress-diagnostic':
-            history = [row for row in rows(GENERATED / f'{prefix}_stats_history.csv') if row['Name'] == 'Aggregated']
+            history = [row for row in rows(evidence_path(f'{prefix}_stats_history.csv')) if row['Name'] == 'Aggregated']
             origin = int(history[0]['Timestamp'])
             first_latency = next((row for row in history if row['95%'] != 'N/A' and float(row['95%']) > 1000), None)
             first_failure = next((row for row in history if int(row['Total Failure Count']) > 0), None)
@@ -148,7 +181,7 @@ def main():
             source = GENERATED / f"{prefix}_{suffix}.csv"
             if source.exists():
                 shutil.copy2(source, EVIDENCE / source.name)
-    resource_files = [path for path in [GENERATED / 'resources.csv', GENERATED / 'resources-after-stress.csv'] if path.exists()]
+    resource_files = [path for path in [evidence_path('resources.csv'), evidence_path('resources-after-stress.csv')] if path.exists()]
     if resource_files:
         samples = [row for path in resource_files for row in rows(path)]
         lines += ["## Recursos observados", "", "Muestreo de un segundo durante los diagnósticos. "
@@ -161,7 +194,8 @@ def main():
             lines.append(f"- `{group[0]['process']}` (PID {pid}): CPU media {sum(cpu)/len(cpu):.2f}%, "
                          f"máxima {max(cpu):.2f}%; RSS mínima/máxima {min(memory):.2f}/{max(memory):.2f} MiB.")
         for path in resource_files:
-            shutil.copy2(path, EVIDENCE / path.name)
+            if path.parent != EVIDENCE:
+                shutil.copy2(path, EVIDENCE / path.name)
         lines += ["", "[Muestras de recursos](evidence/resources.csv) y "
                   "[muestras posteriores](evidence/resources-after-stress.csv). "
                   "El servidor PHP se reinició tras estrés para vaciar la cola.", ""]
@@ -204,7 +238,8 @@ def main():
         "",
         "Los commits son locales al fork. No se realizó push ni se abrió una solicitud al repositorio original.",
     ]
-    (ROOT / "reports" / "INFORME.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    lines += ['', *render_captures(ROOT)]
+    (ROOT / "reports" / "INFORME.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     print("Written reports/INFORME.md and selected evidence")
 
 
