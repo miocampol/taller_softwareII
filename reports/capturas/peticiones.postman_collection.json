@@ -1,0 +1,271 @@
+{
+  "info": {
+    "name": "Taller Locust - Capturas de evidencia",
+    "description": "Ejecuta 01-03 en los servidores de comparacion (10000 filas); 04-07 usan la API principal. Los POST agregan tres filas a locust_lab. Ejecuta 06 antes de 07.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "before_host",
+      "value": "http://127.0.0.1:8001"
+    },
+    {
+      "key": "after_host",
+      "value": "http://127.0.0.1:8002"
+    },
+    {
+      "key": "api_host",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "capture_batch_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Antes: todos los usuarios (10000)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{before_host}}/api/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Arreglo original de 10000 usuarios\", () => pm.expect(pm.response.json()).to.have.lengthOf(10000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Despues: primera pagina",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{after_host}}/api/users?page=1&per_page=5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test(\"Total 10000, pagina 1 y cinco filas\", () => { pm.expect(d.total).to.eql(10000); pm.expect(d.current_page).to.eql(1); pm.expect(d.per_page).to.eql(5); pm.expect(d.data).to.have.lengthOf(5); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Despues: segunda pagina",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{after_host}}/api/users?page=2&per_page=5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Segunda pagina con IDs 6 a 10\", () => { const d = pm.response.json(); pm.expect(d.current_page).to.eql(2); pm.expect(d.data.map(u => u.id)).to.eql([6,7,8,9,10]); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Correos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_host}}/api/users/emails?page=1&per_page=5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Solo id y email\", () => pm.response.json().data.forEach(u => pm.expect(Object.keys(u).sort()).to.eql([\"email\", \"id\"])));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Mayores de veinte",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_host}}/api/users/over-twenty?page=1&per_page=5"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Nacimiento anterior al corte\", () => { const d = pm.response.json(); pm.expect(d.cutoff_date).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); d.data.forEach(u => pm.expect(u.birth_date.slice(0,10) < d.cutoff_date).to.eql(true)); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Crear tres usuarios (201)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_host}}/api/users/bulk",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"users\": [\n    {\n      \"name\": \"Captura 1\",\n      \"email\": \"captura.{{capture_batch_id}}.1@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    },\n    {\n      \"name\": \"Captura 2\",\n      \"email\": \"captura.{{capture_batch_id}}.2@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    },\n    {\n      \"name\": \"Captura 3\",\n      \"email\": \"captura.{{capture_batch_id}}.3@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.test(\"Tres usuarios creados\", () => pm.expect(pm.response.json().users).to.have.lengthOf(3));"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"capture_batch_id\", pm.variables.replaceIn(\"{{$guid}}\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Repetir los mismos correos (422)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_host}}/api/users/bulk",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"users\": [\n    {\n      \"name\": \"Captura 1\",\n      \"email\": \"captura.{{capture_batch_id}}.1@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    },\n    {\n      \"name\": \"Captura 2\",\n      \"email\": \"captura.{{capture_batch_id}}.2@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    },\n    {\n      \"name\": \"Captura 3\",\n      \"email\": \"captura.{{capture_batch_id}}.3@example.com\",\n      \"birth_date\": \"1990-01-01\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Errores en los tres correos\", () => { const d = pm.response.json(); [0,1,2].forEach(i => pm.expect(d.errors).to.have.property(`users.${i}.email`)); });"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"capture_batch_id\")) { throw new Error(\"Ejecuta primero la peticion 06\"); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extra - Paginacion invalida (422)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{api_host}}/api/users?per_page=201"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
