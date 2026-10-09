@@ -15,12 +15,17 @@ class SeedMassUsers extends Command
 
     public function handle(): int
     {
-        $_ENV['MASS_USER_SEED_COUNT'] = (string) $this->option('count');
-        $_ENV['MASS_USER_CHUNK_SIZE'] = (string) $this->option('chunk');
+        $count = filter_var($this->option('count'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $chunk = filter_var($this->option('chunk'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($count === false || $chunk === false) {
+            $this->error('--count y --chunk deben ser enteros positivos.');
+
+            return self::FAILURE;
+        }
 
         $seeder = $this->laravel->make(MassUserSeeder::class);
         $seeder->setCommand($this);
-        $seeder->run();
+        $seeder->run($count, $chunk);
 
         return self::SUCCESS;
     }

@@ -71,4 +71,13 @@ class UserApiTest extends TestCase
         $this->postJson('/api/users/bulk', ['users' => array_slice($users, 0, 2)])->assertUnprocessable();
         $this->assertDatabaseCount('users', 3);
     }
+
+    public function test_mass_seed_command_appends_without_duplicate_emails(): void
+    {
+        $this->artisan('users:seed-mass', ['--count' => 3, '--chunk' => 2])->assertExitCode(0);
+        $this->artisan('users:seed-mass', ['--count' => 3, '--chunk' => 2])->assertExitCode(0);
+        $this->assertDatabaseCount('users', 6);
+        $this->assertSame(6, User::distinct()->count('email'));
+        $this->artisan('users:seed-mass', ['--count' => 1, '--chunk' => 0])->assertExitCode(1);
+    }
 }

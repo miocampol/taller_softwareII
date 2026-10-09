@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class MassUserSeeder extends Seeder
 {
@@ -11,16 +12,16 @@ class MassUserSeeder extends Seeder
 
     public const CHUNK_SIZE = 2_000;
 
-    public function run(): void
+    public function run(?int $count = null, ?int $chunk = null): void
     {
-        $total = (int) env('MASS_USER_SEED_COUNT', self::DEFAULT_TOTAL);
-        $chunkSize = (int) env('MASS_USER_CHUNK_SIZE', self::CHUNK_SIZE);
+        $total = $count ?? (int) env('MASS_USER_SEED_COUNT', self::DEFAULT_TOTAL);
+        $chunkSize = $chunk ?? (int) env('MASS_USER_CHUNK_SIZE', self::CHUNK_SIZE);
 
-        if ($total < 1) {
-            $this->command?->error('MASS_USER_SEED_COUNT debe ser mayor a 0.');
-
-            return;
+        if ($total < 1 || $chunkSize < 1) {
+            throw new \InvalidArgumentException('El total y el tamaño de lote deben ser mayores a 0.');
         }
+
+        $batchToken = (string) Str::uuid();
 
         $passwordHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
         $now = now()->toDateTimeString();
@@ -40,7 +41,7 @@ class MassUserSeeder extends Seeder
 
                 $rows[] = [
                     'name' => 'Usuario '.$sequence,
-                    'email' => 'usuario'.$sequence.'@loadtest.local',
+                    'email' => 'usuario'.$batchToken.'.'.$sequence.'@loadtest.local',
                     'birth_date' => $birthDate,
                     'email_verified_at' => $now,
                     'password' => $passwordHash,
