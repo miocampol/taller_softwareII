@@ -5,7 +5,7 @@ import json
 import shutil
 from pathlib import Path
 
-from capture_sections import render_captures
+from capture_sections import render_api_captures, render_locust_captures
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED = ROOT / "reports" / "generated"
@@ -129,6 +129,7 @@ def main():
                   '- La segunda página devolvió IDs 6 a 10, diferentes de la primera página.', '',
                   '[Comprobación HTTP y huellas de los controladores](evidence/comparison-http.json). '
                   'Las capturas 01–03 deben hacerse sobre esos servidores y ese dataset.', '']
+    lines += render_api_captures(ROOT)
     lines += ['## Ejecuciones observadas', '']
     scenarios = [
         ("smoke-small", "Verificación inicial", "10.000 filas; 5 usuarios, spawn rate 1; 30 segundos."),
@@ -199,6 +200,7 @@ def main():
         lines += ["", "[Muestras de recursos](evidence/resources.csv) y "
                   "[muestras posteriores](evidence/resources-after-stress.csv). "
                   "El servidor PHP se reinició tras estrés para vaciar la cola.", ""]
+    lines += render_locust_captures(ROOT)
     lines += [
         "## Interpretación y pendientes para la entrega formal",
         "",
@@ -238,7 +240,6 @@ def main():
         "",
         "Los commits son locales al fork. No se realizó push ni se abrió una solicitud al repositorio original.",
     ]
-    lines += ['', *render_captures(ROOT)]
     (ROOT / "reports" / "INFORME.md").write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     print("Written reports/INFORME.md and selected evidence")
 

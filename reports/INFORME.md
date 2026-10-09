@@ -45,6 +45,40 @@ Se verificaron dos servidores contra `locust_lab_comparison`, con 10000 filas. E
 
 [Comprobación HTTP y huellas de los controladores](evidence/comparison-http.json). Las capturas 01–03 deben hacerse sobre esos servidores y ese dataset.
 
+## Evidencia visual de las peticiones
+
+Capturas reales tomadas en Postman. Los tiempos y tamaños visibles son muestras individuales; pueden diferir de las mediciones CLI y HTTP anteriores. Los indicadores rojos de Test Results en las respuestas paginadas no acreditan pruebas aprobadas: debe revisarse el script de Postman, pues la respuesta ya es un objeto y no el arreglo de la versión anterior.
+
+### Figura 1. Antes de paginar
+
+![Antes de paginar](image.png)
+
+*GET /api/users en el puerto 8001. La versión original devuelve un arreglo completo. La captura muestra HTTP 200, 2,13 s y 2,73 MB; la base de comparación contiene 10000 filas.*
+
+### Figura 2. Después de paginar: primera página
+
+![Después de paginar: primera página](image-1.png)
+
+*Respuesta paginada con current_page=1 y data. La captura muestra HTTP 200, 127 ms y 3,22 KB. Corresponde a la primera página de la misma base de comparación.*
+
+### Figura 3. Segunda página
+
+![Segunda página](image-2.png)
+
+*GET /api/users?page=2&per_page=5 en el puerto 8002. La respuesta muestra current_page=2 y comienza en el ID 6; HTTP 200, 84 ms y 3,32 KB.*
+
+### Figura 4. Consulta de correos
+
+![Consulta de correos](image-3.png)
+
+*GET /api/users/emails?page=1&per_page=5 en el puerto 8000. Los cinco registros contienen únicamente id y email; HTTP 200, 1,54 s y 2,22 KB.*
+
+### Figura 5. Solicitud del filtro de edad: evidencia no concluyente
+
+![Solicitud del filtro de edad: evidencia no concluyente](image-4.png)
+
+*La URL visible corresponde a over-twenty, pero el cuerpo y first_page_url todavía pertenecen a emails. Esta captura no acredita el filtro de edad. Debe reenviarse la petición y reemplazarse esta imagen con la respuesta que incluya birth_date y cutoff_date.*
+
 ## Ejecuciones observadas
 
 ### Verificación inicial
@@ -127,6 +161,12 @@ Muestreo de un segundo durante los diagnósticos. CPU 100% equivale a un núcleo
 
 [Muestras de recursos](evidence/resources.csv) y [muestras posteriores](evidence/resources-after-stress.csv). El servidor PHP se reinició tras estrés para vaciar la cola.
 
+## Evidencia visual del cliente de Locust
+
+Las siguientes capturas se toman desde http://127.0.0.1:8089. Corresponden a una ejecución adicional desde la interfaz; los parámetros y las cifras deben identificarse en la propia captura o en su pie. No sustituyen los diagnósticos anteriores ni demuestran una prueba formal prolongada.
+
+Para completar esta sección, guarda las capturas de **Statistics** y **Charts** en `reports/locust-estadisticas.png` y `reports/locust-graficos.png`. Si hay errores, agrega `reports/locust-fallos.png`. Al regenerar el informe se incorporarán automáticamente.
+
 ## Interpretación y pendientes para la entrega formal
 
 - Con pocas filas se verificó el funcionamiento de los cuatro endpoints. Con el dataset masivo ya se incumplió el objetivo de latencia con cinco usuarios, aun sin errores HTTP. Por tanto no se ha demostrado un máximo estable que cumpla el SLA de un segundo.
@@ -145,145 +185,3 @@ Los comandos, duraciones completas y pasos de navegador están en [README.md](..
 Material del taller: [PDF](../locust_test.pdf). Referencias de implementación: [Locust](https://docs.locust.io/en/stable/writing-a-locustfile.html), [paginación Laravel 9](https://laravel.com/docs/9.x/pagination).
 
 Los commits son locales al fork. No se realizó push ni se abrió una solicitud al repositorio original.
-
-## Capturas de evidencia
-
-Se recomiendan **14 capturas**, más una opcional de fallos. Las imágenes se agregan automáticamente al regenerar este informe cuando existen sus archivos. Instrucciones completas: [guía de capturas](capturas/GUIA.md).
-
-Las comparaciones HTTP usan 10000 filas en una base separada. Las capturas de Locust de esta sección corresponden a los diagnósticos registrados; para reproducir sus cifras, abre los HTML conservados en `evidence/html/`. No sustituyas esas imágenes por otra ejecución sin identificarla.
-
-### 01. Antes de paginar
-
-**Petición o herramienta:** `GET http://127.0.0.1:8001/api/users`.
-
-Postman: muestra método, URL, HTTP 200, tiempo, tamaño y el comienzo del arreglo JSON. En Test Results debe comprobarse que hay 10000 filas.
-
-**Captura pendiente:** guarda `reports/capturas/01-antes-users.png`.
-
-*Pie previsto: Versión afbb181; base locust_lab_comparison, 10000 filas. El listado original entrega todas las filas en un arreglo.*
-
-### 02. Después de paginar
-
-**Petición o herramienta:** `GET http://127.0.0.1:8002/api/users?page=1&per_page=5`.
-
-Muestra HTTP 200, tiempo, tamaño, total=10000, current_page=1, per_page=5 y data con cinco usuarios.
-
-**Captura pendiente:** guarda `reports/capturas/02-despues-users.png`.
-
-*Pie previsto: Versión paginada; misma base y dataset que la figura anterior. La respuesta limita data a cinco filas.*
-
-### 03. Segunda página
-
-**Petición o herramienta:** `GET http://127.0.0.1:8002/api/users?page=2&per_page=5`.
-
-Muestra current_page=2, per_page=5 y los IDs 6 a 10; compáralos con los IDs 1 a 5 de la primera página.
-
-**Captura pendiente:** guarda `reports/capturas/03-segunda-pagina.png`.
-
-*Pie previsto: Base de comparación de 10000 filas: las páginas contienen registros diferentes, ordenados por ID.*
-
-### 04. Consulta de correos
-
-**Petición o herramienta:** `GET http://127.0.0.1:8000/api/users/emails?page=1&per_page=5`.
-
-Muestra HTTP 200, los metadatos de paginación y data con únicamente id y email.
-
-**Captura pendiente:** guarda `reports/capturas/04-correos.png`.
-
-*Pie previsto: API principal, dataset masivo. El endpoint de correos devuelve únicamente los campos solicitados.*
-
-### 05. Filtro de edad
-
-**Petición o herramienta:** `GET http://127.0.0.1:8000/api/users/over-twenty?page=1&per_page=5`.
-
-Muestra HTTP 200, cutoff_date y birth_date de los usuarios devueltos; todas las fechas deben ser anteriores al corte.
-
-**Captura pendiente:** guarda `reports/capturas/05-mayores-veinte.png`.
-
-*Pie previsto: API principal, dataset masivo. El filtro devuelve usuarios con edad estrictamente superior a veinte años.*
-
-### 06. Creación de tres usuarios
-
-**Petición o herramienta:** `POST http://127.0.0.1:8000/api/users/bulk`.
-
-Usa la petición 06 de la colección. Muestra el cuerpo con tres usuarios y la respuesta 201 con sus IDs y correos.
-
-**Captura pendiente:** guarda `reports/capturas/06-bulk-201.png`.
-
-*Pie previsto: API principal. El lote válido crea exactamente tres usuarios; esta petición aumenta el dataset.*
-
-### 07. Rechazo de correos duplicados
-
-**Petición o herramienta:** `POST http://127.0.0.1:8000/api/users/bulk`.
-
-Envía la petición 07 después de la 06, sin cambiar los correos. Muestra HTTP 422 y errors para los correos.
-
-**Captura pendiente:** guarda `reports/capturas/07-bulk-422.png`.
-
-*Pie previsto: API principal. La validación rechaza un lote cuyos correos ya existen en la base.*
-
-### 08. Pruebas automatizadas
-
-**Petición o herramienta:** `Terminal, desde la raíz del proyecto`.
-
-Ejecuta PHP y Python con los comandos de GUIA.md; muestra ambos resultados aprobados en una captura legible.
-
-**Captura pendiente:** guarda `reports/capturas/08-pruebas.png`.
-
-*Pie previsto: Pruebas funcionales y de contratos aprobadas. PHPUnit utiliza SQLite en memoria.*
-
-### 09. Locust: carga, estadisticas
-
-Abre [el reporte de esta ejecución](evidence/html/load-diagnostic.html). Muestra las cuatro operaciones, peticiones, fallos, RPS y p95.
-
-**Captura pendiente:** guarda `reports/capturas/09-locust-carga-estadisticas.png`.
-
-*Pie previsto: Escenario carga; diagnóstico abreviado; usuarios: 5; spawn rate: 1; duración: 90 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/load-diagnostic.html. Conclusión: Respuestas válidas, con incumplimiento del objetivo de latencia.*
-
-### 10. Locust: carga, graficos
-
-Abre [el reporte de esta ejecución](evidence/html/load-diagnostic.html). Muestra los gráficos de usuarios, latencia y peticiones por segundo con sus ejes temporales.
-
-**Captura pendiente:** guarda `reports/capturas/10-locust-carga-graficos.png`.
-
-*Pie previsto: Escenario carga; diagnóstico abreviado; usuarios: 5; spawn rate: 1; duración: 90 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/load-diagnostic.html. Conclusión: Respuestas válidas, con incumplimiento del objetivo de latencia.*
-
-### 11. Locust: estres, estadisticas
-
-Abre [el reporte de esta ejecución](evidence/html/stress-diagnostic.html). Muestra las cuatro operaciones, peticiones, fallos, RPS y p95.
-
-**Captura pendiente:** guarda `reports/capturas/11-locust-estres-estadisticas.png`.
-
-*Pie previsto: Escenario estres; diagnóstico abreviado; usuarios: 5/10/20/40/80/160; spawn rate: 5/5/10/10/20/40; duración: 6 etapas de 10 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/stress-diagnostic.html. Conclusión: Saturación local: fallos de transporte y latencias cercanas al timeout.*
-
-### 12. Locust: estres, graficos
-
-Abre [el reporte de esta ejecución](evidence/html/stress-diagnostic.html). Muestra los gráficos de usuarios, latencia y peticiones por segundo con sus ejes temporales.
-
-**Captura pendiente:** guarda `reports/capturas/12-locust-estres-graficos.png`.
-
-*Pie previsto: Escenario estres; diagnóstico abreviado; usuarios: 5/10/20/40/80/160; spawn rate: 5/5/10/10/20/40; duración: 6 etapas de 10 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/stress-diagnostic.html. Conclusión: Saturación local: fallos de transporte y latencias cercanas al timeout.*
-
-### 13. Locust: capacidad, estadisticas
-
-Abre [el reporte de esta ejecución](evidence/html/capacity-diagnostic.html). Muestra las cuatro operaciones, peticiones, fallos, RPS y p95.
-
-**Captura pendiente:** guarda `reports/capturas/13-locust-capacidad-estadisticas.png`.
-
-*Pie previsto: Escenario capacidad; diagnóstico abreviado; usuarios: 1; spawn rate: 1; duración: 60 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/capacity-diagnostic.html. Conclusión: Diagnóstico corto; no acredita resistencia durante una hora.*
-
-### 14. Locust: capacidad, graficos
-
-Abre [el reporte de esta ejecución](evidence/html/capacity-diagnostic.html). Muestra los gráficos de usuarios, latencia y peticiones por segundo con sus ejes temporales.
-
-**Captura pendiente:** guarda `reports/capturas/14-locust-capacidad-graficos.png`.
-
-*Pie previsto: Escenario capacidad; diagnóstico abreviado; usuarios: 1; spawn rate: 1; duración: 60 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/capacity-diagnostic.html. Conclusión: Diagnóstico corto; no acredita resistencia durante una hora.*
-
-### 15. Fallos de estrés (opcional)
-
-Abre la sección Failures del HTML de estrés y muestra el tipo de fallo y sus ocurrencias.
-
-**Captura pendiente:** guarda `reports/capturas/15-locust-estres-fallos.png`.
-
-*Pie previsto: Escenario estres; diagnóstico abreviado; usuarios: 5/10/20/40/80/160; spawn rate: 5/5/10/10/20/40; duración: 6 etapas de 10 segundos más cierre; dataset: al menos 1500000 filas; los POST agregan registros; host: http://127.0.0.1:8000; fecha: 2026-10-09. Fuente: evidence/html/stress-diagnostic.html. Conclusión: Saturación local: fallos de transporte y latencias cercanas al timeout.*

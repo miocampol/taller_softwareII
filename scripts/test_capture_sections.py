@@ -1,5 +1,4 @@
 import importlib.util
-import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -10,38 +9,42 @@ SPEC.loader.exec_module(captures)
 
 
 class CaptureTests(unittest.TestCase):
-    def test_missing_images_have_placeholders_without_broken_image_links(self):
+    def test_missing_images_do_not_create_broken_image_links(self):
         with tempfile.TemporaryDirectory() as temp:
-            text = '\n'.join(captures.render_captures(Path(temp)))
-            self.assertEqual(15, text.count('**Captura pendiente:**'))
+            root = Path(temp)
+            text = '\n'.join(captures.render_api_captures(root) + captures.render_locust_captures(root))
             self.assertNotIn('![', text)
-            self.assertIn('diagnóstico abreviado', text)
+            self.assertNotIn('Captura pendiente', text)
+            self.assertNotIn('GUIA.md', text)
+            self.assertIn('reports/locust-estadisticas.png', text)
 
-    def test_existing_image_and_custom_caption_survive_repeated_rendering(self):
+    def test_user_images_are_included_in_order_and_not_modified(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            folder = root / 'reports' / 'capturas'
-            folder.mkdir(parents=True)
-            (folder / '09-locust-carga-estadisticas.png').write_bytes(b'test-fixture')
-            data = captures.default_details()
-            data['carga-estadisticas']['conclusion'] = 'Conclusión registrada por el equipo'
-            (folder / 'detalles.json').write_text(json.dumps(data), encoding='utf-8')
-            first = '\n'.join(captures.render_captures(root))
-            self.assertEqual(first, '\n'.join(captures.render_captures(root)))
-            self.assertIn('(capturas/09-locust-carga-estadisticas.png)', first)
-            self.assertIn('Conclusión registrada por el equipo', first)
-            self.assertTrue((folder / '09-locust-carga-estadisticas.png').exists())
+            folder = root / 'reports'
+            folder.mkdir()
+            for name, _, _ in captures.API_IMAGES:
+                (folder / name).write_bytes(b'test-fixture')
+            first = '\n'.join(captures.render_api_captures(root))
+            self.assertEqual(first, '\n'.join(captures.render_api_captures(root)))
+            self.assertEqual(5, first.count('!['))
+            self.assertIn('evidencia no concluyente', first)
+            for name, _, _ in captures.API_IMAGES:
+                self.assertIn(f']({name})', first)
+                self.assertEqual(b'test-fixture', (folder / name).read_bytes())
 
-    def test_formal_evidence_is_separate_and_missing_parameters_remain_explicit(self):
+    def test_client_images_are_separate_from_previous_measurements(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            folder = root / 'reports' / 'capturas' / 'formales'
-            folder.mkdir(parents=True)
-            (folder / 'capacidad-graficos.png').write_bytes(b'test-fixture')
-            text = '\n'.join(captures.render_captures(root))
-            self.assertIn('## Evidencias de nuevas pruebas formales', text)
-            self.assertIn('pendiente de registrar', text)
-            self.assertIn('no reemplazan', text)
+            folder = root / 'reports'
+            folder.mkdir()
+            for name in ['locust-estadisticas.png', 'locust-graficos.png']:
+                (folder / name).write_bytes(b'test-fixture')
+            text = '\n'.join(captures.render_locust_captures(root))
+            self.assertEqual(2, text.count('!['))
+            self.assertIn('ejecución adicional', text)
+            self.assertNotIn('Para completar esta sección', text)
+            self.assertNotIn('](locust-fallos.png)', text)
 
 
 if __name__ == '__main__':

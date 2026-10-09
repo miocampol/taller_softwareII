@@ -100,4 +100,4 @@ El servidor PHP integrado en Windows atiende las peticiones secuencialmente. Las
 
 Más detalles del contrato en [README-API-LOCUST.md](README-API-LOCUST.md). El informe está en [reports/INFORME.md](reports/INFORME.md).
 
-Para adjuntar capturas, sigue [reports/capturas/GUIA.md](reports/capturas/GUIA.md). Incluye una colección importable de Postman, los nombres de las 14 capturas recomendadas y servidores aislados para comparar antes/después con 10000 filas. Las capturas reales aparecen automáticamente al regenerar el informe.
+Las capturas de Postman están integradas en `reports/INFORME.md`. Para agregar las del cliente de Locust, guarda Statistics como `reports/locust-estadisticas.png` y Charts como `reports/locust-graficos.png`; si hay errores, guarda Failures como `reports/locust-fallos.png`. Ejecuta `.\.venv\Scripts\python.exe scripts\write-report.py` para incorporarlas. Los resultados tomados desde la interfaz pertenecen a una ejecución adicional y deben conservar sus propios parámetros.
