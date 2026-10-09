@@ -1,0 +1,29 @@
+{
+  "baseline_commit": "afbb181",
+  "database": "locust_lab_comparison",
+  "comparison_rows": 10000,
+  "main_database_rows": 1500108,
+  "before": {
+    "url": "http://127.0.0.1:8001/api/users",
+    "status": 200,
+    "rows": 10000,
+    "response_bytes": 2866683,
+    "elapsed_ms": 2531.51,
+    "controller_sha256": "fba580546c4f840fce73dff8ac008c7b332ed42fdbf7a4d86b5cbf408db3f1d1"
+  },
+  "after": {
+    "url": "http://127.0.0.1:8002/api/users?page=1&per_page=5",
+    "status": 200,
+    "rows": 5,
+    "response_bytes": 3077,
+    "elapsed_ms": 128.25,
+    "controller_sha256": "3ad5587646b170a6f913450f44371c0e341ee0b458590b219164ced28bfc3a8a"
+  },
+  "second_page_ids": [
+    6,
+    7,
+    8,
+    9,
+    10
+  ]
+}
