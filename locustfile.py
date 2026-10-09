@@ -1,5 +1,6 @@
 """90% reads / 10% writes. Run with python -m locust -f locustfile.py."""
 
+import logging
 import random
 
 from locust import HttpUser, between, events, task
@@ -30,6 +31,12 @@ def check_sla(environment, **kwargs):
     options = environment.parsed_options
     total = environment.stats.total
     breached = total.num_requests == 0 or total.fail_ratio > options.sla_error_ratio
+    expected = {('GET', '/api/users'), ('GET', '/api/users/emails'),
+                ('GET', '/api/users/over-twenty'), ('POST', '/api/users/bulk')}
+    observed = {(entry.method, entry.name) for entry in environment.stats.entries.values() if entry.num_requests}
+    if expected - observed:
+        logging.warning('Incomplete endpoint coverage: %s', sorted(expected - observed))
+        breached = True
     for entry in environment.stats.entries.values():
         p95 = entry.get_response_time_percentile(0.95) or 0
         breached |= p95 > options.sla_p95_ms or entry.fail_ratio > options.sla_error_ratio
