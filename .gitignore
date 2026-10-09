@@ -13,3 +13,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+/.venv
+/__pycache__
+/**/__pycache__
+/reports/generated
