@@ -1,138 +1,72 @@
-# API Laravel 9 — Laboratorio Locust
+# API Laravel: contrato y preparación del laboratorio
 
-API REST para practicar pruebas de **carga**, **estrés** y **capacidad** con [Locust](https://locust.io/).
+La API está en la raíz de este repositorio. Consulta [README.md](README.md) para instalarla en Laragon y abrir Locust en el navegador.
 
-## Requisitos
+## Base de datos
 
-- PHP 8.0+
-- Composer
-- MySQL o PostgreSQL (recomendado para 1.5M registros)
-- Extensión PHP correspondiente (`pdo_mysql` / `pdo_pgsql`)
+- MySQL: base `locust_lab`, configurada en `.env`.
+- `php artisan migrate` crea las tablas sin eliminarlas.
+- `php artisan db:seed` agrega `MASS_USER_SEED_COUNT` filas (referencia: 1.500.000) en lotes de `MASS_USER_CHUNK_SIZE` (2000).
+- Para agregar una cantidad concreta sin borrar datos: `php artisan users:seed-mass --count=10000 --chunk=2000`.
+- Los lotes de seed usan correos con UUID; las ejecuciones sucesivas no duplican los correos de lotes anteriores. El comando agrega filas; no ajusta la tabla a un total absoluto.
+- `php artisan migrate:fresh --seed` borra las tablas. Resérvalo para una base de laboratorio que puedas descartar.
 
-## Instalación
+## GET paginados
 
-```bash
-cd laravel-api
-composer install
-cp .env.example .env   # si aplica
-php artisan key:generate
-```
+Host: `http://127.0.0.1:8000`. Rutas:
 
-Configure la base de datos en `.env`:
+- `GET /api/users`: campos públicos de los usuarios.
+- `GET /api/users/emails`: únicamente `id` y `email`.
+- `GET /api/users/over-twenty`: usuarios nacidos antes de la fecha de corte de veinte años atrás. La persona que cumple exactamente veinte años hoy queda excluida.
 
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=locust_lab
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-Eso ejecuta `DatabaseSeeder`, que llama a `MassUserSeeder` (1.500.000 usuarios por defecto).
-
-Opcional en `.env`:
-
-```env
-MASS_USER_SEED_COUNT=1500000
-MASS_USER_CHUNK_SIZE=2000
-```
-
-Alternativa sin borrar tablas:
-
-```bash
-php artisan users:seed-mass --count=1500000 --chunk=2000
-```
-
-El seed masivo puede tardar varios minutos según el hardware. Ajuste `MASS_USER_CHUNK_SIZE` o `--chunk` si hay errores de memoria.
-
-## Endpoints (versión entregada — sin paginación)
-
-Base URL: `http://HOST:PUERTO/api`
-
-Los tres GET usan `User::all()` (en `over-twenty` se filtra en memoria tras cargar todo). Devuelven un arreglo JSON con todos los registros. Con 1.5M filas provoca timeouts, 500 por memoria o respuestas enormes. **Es intencional:** parte del laboratorio es corregirlo.
-
-| Método | Ruta | Comportamiento actual |
-|--------|------|------------------------|
-| GET | `/users` | `User::all()` |
-| GET | `/users/emails` | `User::all(['id', 'email'])` |
-| GET | `/users/over-twenty` | `User::all()` + filtro en PHP por edad |
-| POST | `/users/bulk` | Crea **exactamente 3** usuarios (sin cambios) |
-
-Archivo a modificar: `app/Http/Controllers/Api/UserController.php`.
-
-### Tarea API (estudiantes)
-
-1. Sustituir `->get()` por `->paginate()` (o cursor pagination) en los tres GET.
-2. Exponer `?page=` y `?per_page=` con límites razonables (p. ej. máx. 200).
-3. Documentar en el informe el antes/después (una petición con dataset pequeño basta para demo funcional).
-4. **Después** de paginar, ejecutar Locust con el seed masivo.
-
-### Ejemplo GET usuarios (estado actual)
+Los tres endpoints aceptan `page` (entero >= 1, por defecto 1) y `per_page` (entero entre 1 y 200, por defecto 50). Parámetros inválidos reciben **422** cuando el cliente solicita JSON. Una página fuera del rango recibe **200** con `data: []`.
 
 ```http
-GET /api/users HTTP/1.1
-Host: localhost:8000
+GET /api/users?page=2&per_page=50
 Accept: application/json
 ```
 
-Respuesta: arreglo JSON con un objeto por usuario (todos los campos visibles del modelo, sin contraseña).
+Las respuestas son objetos de paginación Laravel, con `total`, `data`, `current_page`, `per_page`, `last_page` y enlaces. Los enlaces conservan los parámetros de consulta. `over-twenty` añade `cutoff_date` en formato `YYYY-MM-DD`. Las fechas de nacimiento de los usuarios se serializan como fechas ISO según el modelo Laravel. Ninguna operación expone contraseñas ni tokens de recuerdo.
 
-### Ejemplo POST bulk (3 usuarios)
+La consulta está ordenada por `id` para estabilizar las páginas. El filtro de edad se ejecuta en SQL; usa el índice `users_birth_date_index` que ya existía en la migración original. Los listados y sus conteos son consultas separadas: una escritura concurrente puede cambiar el total. La prueba no supone que el total permanezca fijo entre peticiones.
+
+**Cambio respecto a la API inicial:** los GET devolvían arreglos completos mediante `User::all()`. Ahora devuelven un objeto paginado. Los clientes que consumían el arreglo deben leer `data`. Con el dataset masivo, la paginación limita las filas cargadas en PHP, pero el conteo `total` todavía tiene un coste que debe medirse.
+
+## Creación en lote
 
 ```http
-POST /api/users/bulk HTTP/1.1
-Host: localhost:8000
+POST /api/users/bulk
+Accept: application/json
 Content-Type: application/json
-Accept: application/json
+```
 
+```json
 {
   "users": [
-    {
-      "name": "Ana López",
-      "email": "ana.locust@example.com",
-      "birth_date": "1998-05-12"
-    },
-    {
-      "name": "Bruno Díaz",
-      "email": "bruno.locust@example.com",
-      "birth_date": "2000-11-03",
-      "password": "secreto123"
-    },
-    {
-      "name": "Carla Ruiz",
-      "email": "carla.locust@example.com",
-      "birth_date": "1995-01-20"
-    }
+    {"name": "Ana", "email": "ana.unique@example.com", "birth_date": "1998-05-12"},
+    {"name": "Bruno", "email": "bruno.unique@example.com", "birth_date": "2000-11-03", "password": "secreto123"},
+    {"name": "Carla", "email": "carla.unique@example.com", "birth_date": "1995-01-20"}
   ]
 }
 ```
 
-Respuesta `201` con los tres usuarios creados (sin contraseña en JSON).
+Se requieren exactamente tres usuarios, nombres válidos, fechas no futuras y correos únicos tanto dentro del lote como en la base. La contraseña es opcional; si se incluye debe tener al menos seis caracteres. Éxito: **201**, `message` y `users` con los tres registros creados. Una validación rechazada responde **422**, que Locust registra como fallo.
 
-## Factory (datos pequeños)
+Cada petición de prueba genera correos distintos. No vuelvas a enviar el ejemplo sin cambiarlos, porque los correos quedarían duplicados.
 
-```bash
-php artisan tinker
->>> \App\Models\User::factory(100)->create();
-```
+## Configuración para medir
 
-La factory genera `birth_date` aleatoria entre 10 y 70 años atrás.
+`API_RATE_LIMIT=0` desactiva el throttle solo para el entorno académico controlado. Al omitir la variable se conserva el límite de 60 peticiones/minuto por IP; un valor positivo fija otro límite. Documenta su estado en el informe. Usa `php artisan config:clear` si cambias `.env` después de haber cacheado la configuración.
 
-## Servidor de desarrollo
+El servidor integrado de PHP se usa para verificar el ejercicio local. En Windows atiende secuencialmente; una cola creciente puede dominar la latencia. Un despliegue con múltiples trabajadores requiere repetir las mediciones. Los tiempos de espera, el hashing de las tres contraseñas del POST y los conteos SQL también afectan los resultados.
 
-```bash
-php artisan serve --host=0.0.0.0 --port=8000
-```
+## Archivos de la entrega
 
-Para pruebas de carga reales, use PHP-FPM + Nginx/Apache y OPcache en un entorno dedicado, no el servidor embebido de `artisan serve`.
+- `locustfile.py`: mezcla HTTP, tiempos de espera y validaciones.
+- `stress_locustfile.py`: rampa de estrés.
+- `loadtests/*.conf`: parámetros de los escenarios.
+- `requirements.txt`: versión de Locust.
+- `scripts/`: servidor local, monitor de recursos y comparación CLI de paginación.
+- `reports/INFORME.md`: informe de implementación y mediciones realizadas.
 
-## Tareas para estudiantes
-
-1. **Refactorizar la API:** paginación en los GET de `UserController`.
-2. **Locust:** implementar `locustfile.py` con escenarios de carga, estrés y capacidad. Ver `../locust/` y `../overleaf/`.
-3. **Informe:** comparar métricas API sin paginar (opcional, dataset pequeño) vs API corregida bajo carga.
+Referencias: [Locust](https://docs.locust.io/en/stable/writing-a-locustfile.html), [paginación Laravel 9](https://laravel.com/docs/9.x/pagination).
