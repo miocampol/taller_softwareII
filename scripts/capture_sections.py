@@ -14,10 +14,10 @@ API_IMAGES = [
     ('image-3.png', 'Consulta de correos',
      'GET /api/users/emails?page=1&per_page=5 en el puerto 8000. '
      'Los cinco registros contienen únicamente id y email; HTTP 200, 1,54 s y 2,22 KB.'),
-    ('image-4.png', 'Solicitud del filtro de edad: evidencia no concluyente',
-     'La URL visible corresponde a over-twenty, pero el cuerpo y first_page_url todavía pertenecen '
-     'a emails. Esta captura no acredita el filtro de edad. Debe reenviarse la petición y reemplazarse '
-     'esta imagen con la respuesta que incluya birth_date y cutoff_date.'),
+    ('image-5.png', 'Filtro de edad',
+     'GET /api/users/over-twenty?page=1&per_page=5 en el puerto 8000. '
+     'La respuesta muestra usuarios con birth_date anteriores al corte de veinte años. '
+     'La captura registra HTTP 200, 573 ms y 3,29 KB.'),
 ]
 
 

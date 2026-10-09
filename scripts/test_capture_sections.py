@@ -28,7 +28,7 @@ class CaptureTests(unittest.TestCase):
             first = '\n'.join(captures.render_api_captures(root))
             self.assertEqual(first, '\n'.join(captures.render_api_captures(root)))
             self.assertEqual(5, first.count('!['))
-            self.assertIn('evidencia no concluyente', first)
+            self.assertIn('Filtro de edad', first)
             for name, _, _ in captures.API_IMAGES:
                 self.assertIn(f']({name})', first)
                 self.assertEqual(b'test-fixture', (folder / name).read_bytes())
