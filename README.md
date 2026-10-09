@@ -6,7 +6,7 @@ Proyecto personal basado en la API del taller de Ingeniería de Software II. Inc
 
 ## Informe inicial: pruebas de rendimiento con Locust
 
-Fecha: 9 de octubre de 2026 (America/Bogota). Taller de Ingeniería de Software II.
+Taller de Ingeniería de Software II.
 
 ### Alcance y estado
 
