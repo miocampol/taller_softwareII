@@ -1,0 +1,8 @@
+{
+    "mode": "page",
+    "dataset_rows": 10000,
+    "returned_rows": 50,
+    "elapsed_ms": 20.36,
+    "peak_memory_mb": 18,
+    "response_bytes": 13476
+}

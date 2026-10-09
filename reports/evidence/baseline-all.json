@@ -1,0 +1,8 @@
+{
+    "mode": "all",
+    "dataset_rows": 10000,
+    "returned_rows": 10000,
+    "elapsed_ms": 2195.1,
+    "peak_memory_mb": 52,
+    "response_bytes": 2496683
+}

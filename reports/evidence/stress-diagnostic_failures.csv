@@ -1,0 +1,5 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/api/users/bulk,"CatchResponseError('Expected HTTP 201, received 0')",23,2026-10-09T16:45:59Z,2026-10-09T16:46:21Z
+GET,/api/users/over-twenty,"CatchResponseError('Expected HTTP 200, received 0')",18,2026-10-09T16:45:58Z,2026-10-09T16:46:19Z
+GET,/api/users,"CatchResponseError('Expected HTTP 200, received 0')",74,2026-10-09T16:45:54Z,2026-10-09T16:46:24Z
+GET,/api/users/emails,"CatchResponseError('Expected HTTP 200, received 0')",44,2026-10-09T16:45:58Z,2026-10-09T16:46:23Z

@@ -15,6 +15,23 @@ def rows(path):
         return list(csv.DictReader(stream))
 
 
+def final_stats(prefix):
+    html = (GENERATED / f'{prefix}.html').read_text(encoding='utf-8')
+    payload = json.JSONDecoder().raw_decode(html.split('window.templateArgs = ', 1)[1].lstrip())[0]
+    selected = {key: payload[key] for key in ['start_time', 'end_time', 'duration',
+                'requests_statistics', 'response_time_statistics', 'failures_statistics']}
+    (EVIDENCE / f'{prefix}_final.json').write_text(json.dumps(selected, indent=2), encoding='utf-8')
+    percentiles = {(row['method'], row['name']): row for row in payload['response_time_statistics']}
+    result = []
+    for row in payload['requests_statistics']:
+        percent = percentiles[(row['method'], row['name'])]
+        result.append({'Type': row['method'], 'Name': row['name'],
+                       'Request Count': row['num_requests'], 'Failure Count': row['num_failures'],
+                       'Requests/s': row['total_rps'], '50%': percent['0.5'],
+                       '95%': percent['0.95'], '99%': percent['0.99']})
+    return result
+
+
 def main():
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -93,7 +110,7 @@ def main():
         path = GENERATED / f"{prefix}_stats.csv"
         if not path.exists():
             continue
-        stats = rows(path)
+        stats = final_stats(prefix)
         aggregate = next(row for row in stats if row["Name"] == "Aggregated")
         count, failed = int(aggregate["Request Count"]), int(aggregate["Failure Count"])
         lines += [f"### {title}", "", detail, "",
@@ -121,7 +138,10 @@ def main():
         if len([row for row in stats if row["Name"] != "Aggregated"]) < 4:
             lines += ["", "**Cobertura incompleta:** la mezcla aleatoria no ejecutó las cuatro operaciones "
                       "en este intervalo corto. No se acepta esta ejecución como escenario completo."]
-        lines += ["", f"Evidencia: [estadísticas CSV](evidence/{prefix}_stats.csv). "
+        lines += ["", f"Evidencia: [estadísticas finales](evidence/{prefix}_final.json) "
+                  f"extraídas del informe HTML y [estadísticas CSV](evidence/{prefix}_stats.csv). "
+                  "El CSV periódico puede omitir la última petición respecto al cierre del HTML; "
+                  "las cifras anteriores corresponden al cierre. "
                   "Los percentiles son aproximaciones de Locust; pocas muestras, especialmente de POST, "
                   "limitan su precisión.", ""]
         for suffix in ["stats", "stats_history", "failures", "exceptions"]:
@@ -157,6 +177,9 @@ def main():
         "- En estrés debe relacionarse el historial temporal con la concurrencia y los timeouts. "
         "La rampa abreviada y el timeout de 30 segundos pueden desplazar la observación del fallo "
         "a una etapa posterior: no atribuir el primer timeout automáticamente a ese número de usuarios.",
+        "- Los fallos de estrés registrados como estado 0 representan ausencia de respuesta HTTP. "
+        "Las duraciones cercanas a 30 segundos son compatibles con el timeout del cliente. "
+        "El CSV original conserva esa clasificación y no permite separar todas las causas de transporte.",
         "- Ejecutar el perfil de carga durante al menos diez minutos y el estrés de seis etapas de un minuto. "
         "Repetir en un servidor con múltiples trabajadores si se busca estimar capacidad de despliegue.",
         "- Elegir la concurrencia de capacidad usando el máximo estable demostrado y ejecutar al menos "

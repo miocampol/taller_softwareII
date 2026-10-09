@@ -1,0 +1,188 @@
+{
+  "start_time": "2026-10-09T16:44:57Z",
+  "end_time": "2026-10-09T16:46:26Z",
+  "duration": "1 minute and 29 seconds",
+  "requests_statistics": [
+    {
+      "avg_content_length": 2854.81914893617,
+      "avg_response_time": 26237.447923404263,
+      "current_fail_per_sec": 3.1,
+      "current_rps": 3.1,
+      "max_response_time": 30245.0,
+      "median_response_time": 30000,
+      "method": "GET",
+      "min_response_time": 1621.0,
+      "name": "/api/users",
+      "num_failures": 75,
+      "num_requests": 94,
+      "response_time_percentile_0.95": 30000,
+      "response_time_percentile_0.99": 30000,
+      "total_fail_per_sec": 0.8484185105400558,
+      "total_rps": 1.0633511998768699
+    },
+    {
+      "avg_content_length": 136.60714285714286,
+      "avg_response_time": 26206.721885714276,
+      "current_fail_per_sec": 1.9,
+      "current_rps": 1.9,
+      "max_response_time": 30262.0,
+      "median_response_time": 30000,
+      "method": "POST",
+      "min_response_time": 1227.0,
+      "name": "/api/users/bulk",
+      "num_failures": 23,
+      "num_requests": 28,
+      "response_time_percentile_0.95": 30000,
+      "response_time_percentile_0.99": 30000,
+      "total_fail_per_sec": 0.26018167656561714,
+      "total_rps": 0.31674291060162085
+    },
+    {
+      "avg_content_length": 1139.1166666666666,
+      "avg_response_time": 26594.54840166671,
+      "current_fail_per_sec": 2.6,
+      "current_rps": 2.6,
+      "max_response_time": 30247.0,
+      "median_response_time": 30000,
+      "method": "GET",
+      "min_response_time": 2681.0,
+      "name": "/api/users/emails",
+      "num_failures": 44,
+      "num_requests": 60,
+      "response_time_percentile_0.95": 30000,
+      "response_time_percentile_0.99": 30000,
+      "total_fail_per_sec": 0.4977388595168328,
+      "total_rps": 0.6787348084320447
+    },
+    {
+      "avg_content_length": 757.0,
+      "avg_response_time": 28741.659489473648,
+      "current_fail_per_sec": 1.0,
+      "current_rps": 1.0,
+      "max_response_time": 30248.0,
+      "median_response_time": 30000,
+      "method": "GET",
+      "min_response_time": 4625.0,
+      "name": "/api/users/over-twenty",
+      "num_failures": 18,
+      "num_requests": 19,
+      "response_time_percentile_0.95": 30000,
+      "response_time_percentile_0.99": 30000,
+      "total_fail_per_sec": 0.2036204425296134,
+      "total_rps": 0.21493268933681414
+    },
+    {
+      "avg_content_length": 1765.7114427860697,
+      "avg_response_time": 26576.481353233852,
+      "current_fail_per_sec": 8.6,
+      "current_rps": 8.6,
+      "max_response_time": 30262.0,
+      "median_response_time": 30000,
+      "method": "",
+      "min_response_time": 1227.0,
+      "name": "Aggregated",
+      "num_failures": 160,
+      "num_requests": 201,
+      "response_time_percentile_0.95": 30000,
+      "response_time_percentile_0.99": 30000,
+      "total_fail_per_sec": 1.8099594891521191,
+      "total_rps": 2.2737616082473497
+    }
+  ],
+  "response_time_statistics": [
+    {
+      "0.5": 30000,
+      "0.6": 30000,
+      "0.7": 30000,
+      "0.8": 30000,
+      "0.9": 30000,
+      "0.95": 30000,
+      "0.99": 30000,
+      "1.0": 30000,
+      "method": "GET",
+      "name": "/api/users"
+    },
+    {
+      "0.5": 30000,
+      "0.6": 30000,
+      "0.7": 30000,
+      "0.8": 30000,
+      "0.9": 30000,
+      "0.95": 30000,
+      "0.99": 30000,
+      "1.0": 30000,
+      "method": "POST",
+      "name": "/api/users/bulk"
+    },
+    {
+      "0.5": 30000,
+      "0.6": 30000,
+      "0.7": 30000,
+      "0.8": 30000,
+      "0.9": 30000,
+      "0.95": 30000,
+      "0.99": 30000,
+      "1.0": 30000,
+      "method": "GET",
+      "name": "/api/users/emails"
+    },
+    {
+      "0.5": 30000,
+      "0.6": 30000,
+      "0.7": 30000,
+      "0.8": 30000,
+      "0.9": 30000,
+      "0.95": 30000,
+      "0.99": 30000,
+      "1.0": 30000,
+      "method": "GET",
+      "name": "/api/users/over-twenty"
+    },
+    {
+      "0.5": 30000,
+      "0.6": 30000,
+      "0.7": 30000,
+      "0.8": 30000,
+      "0.9": 30000,
+      "0.95": 30000,
+      "0.99": 30000,
+      "1.0": 30000,
+      "method": "",
+      "name": "Aggregated"
+    }
+  ],
+  "failures_statistics": [
+    {
+      "error": "CatchResponseError('Expected HTTP 201, received 0')",
+      "first_seen": 1791564359.2685058,
+      "last_seen": 1791564381.2003233,
+      "method": "POST",
+      "name": "/api/users/bulk",
+      "occurrences": 23
+    },
+    {
+      "error": "CatchResponseError('Expected HTTP 200, received 0')",
+      "first_seen": 1791564358.2725961,
+      "last_seen": 1791564379.7473228,
+      "method": "GET",
+      "name": "/api/users/over-twenty",
+      "occurrences": 18
+    },
+    {
+      "error": "CatchResponseError('Expected HTTP 200, received 0')",
+      "first_seen": 1791564354.3484423,
+      "last_seen": 1791564386.3819468,
+      "method": "GET",
+      "name": "/api/users",
+      "occurrences": 75
+    },
+    {
+      "error": "CatchResponseError('Expected HTTP 200, received 0')",
+      "first_seen": 1791564358.2705436,
+      "last_seen": 1791564383.9496863,
+      "method": "GET",
+      "name": "/api/users/emails",
+      "occurrences": 44
+    }
+  ]
+}
